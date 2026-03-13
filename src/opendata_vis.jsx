@@ -175,10 +175,32 @@ export default function NYCOpenDataViz() {
   const renderChart = () => {
     if (!yField || !xField) return <div>Please select X and Y axes.</div>;
 
+    // Clean up the data we actually chart so we avoid
+    // weird looking bars from undefined / empty values
+    const chartData = rawData
+      .slice(0, 100)
+      .filter(row => {
+        const xVal = row[xField];
+        const yVal = row[yField];
+        if (xVal === undefined || xVal === null || xVal === "") return false;
+        if (yVal === undefined || yVal === null || yVal === "") return false;
+        // y must be numeric for meaningful charts
+        return !isNaN(Number(yVal));
+      });
+
+    if (!chartData.length) {
+      return (
+        <div>
+          No clean data points to plot for this X/Y combination.
+          Try choosing a different numeric field for Y or a different category for X.
+        </div>
+      );
+    }
+
     if (chartType === "Bar") {
       return (
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={rawData.slice(0,100)}>
+          <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={xField} tick={{fontSize: 12}} />
             <YAxis />
@@ -192,7 +214,7 @@ export default function NYCOpenDataViz() {
     else if (chartType === "Line") {
       return (
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={rawData.slice(0,100)}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={xField} tick={{fontSize: 12}} />
             <YAxis />
