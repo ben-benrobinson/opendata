@@ -13,39 +13,39 @@ const NYC_DATASETS = [
     name: "311 Service Requests",
     // 311 has a lot of rows; fetch a small sample
     // so it loads quickly without timing out.
-    url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=5000"
   },
   {
     name: "NYC Subway Entrances",
     // Original NYC Open Data view is now 404; use the
     // State of New York Open Data API instead.
-    url: "https://data.ny.gov/resource/i9wp-a4ja.json?$limit=500"
+    url: "https://data.ny.gov/resource/i9wp-a4ja.json?$limit=5000"
   },
   {
     name: "Film Permits",
-    url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=5000"
   },
   {
     name: "NYC Jobs",
-    url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=5000"
   },
   {
     name: "NYC Motor Vehicle Collisions",
     // This dataset is extremely large; keep the limit
     // quite low so the UI stays responsive.
-    url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=5000"
   },
   {
     name: "Street Tree Census",
-    url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=5000"
   },
   {
     name: "Covid-19 Data",
-    url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=5000"
   },
   {
     name: "Restaurant Inspection Results",
-    url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=500"
+    url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=5000"
   },
 ];
 
@@ -200,10 +200,22 @@ export default function NYCOpenDataViz() {
     if (chartType === "Bar") {
       return (
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={chartData}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 16, right: 24, left: 8, bottom: 60 }}
+          >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xField} tick={{fontSize: 12}} />
-            <YAxis />
+            <XAxis
+              dataKey={xField}
+              tick={{ fontSize: 11, fill: "#e5e7eb" }}
+              angle={-35}
+              textAnchor="end"
+              height={70}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "#e5e7eb" }}
+              width={70}
+            />
             <Tooltip />
             <Legend />
             <Bar dataKey={yField} fill="#8884d8" />
@@ -214,10 +226,22 @@ export default function NYCOpenDataViz() {
     else if (chartType === "Line") {
       return (
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 16, right: 24, left: 8, bottom: 60 }}
+          >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xField} tick={{fontSize: 12}} />
-            <YAxis />
+            <XAxis
+              dataKey={xField}
+              tick={{ fontSize: 11, fill: "#e5e7eb" }}
+              angle={-35}
+              textAnchor="end"
+              height={70}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "#e5e7eb" }}
+              width={70}
+            />
             <Tooltip />
             <Legend />
             <Line dataKey={yField} stroke="#82ca9d" />

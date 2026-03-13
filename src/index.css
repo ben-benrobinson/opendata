@@ -151,7 +151,8 @@ button:focus-visible {
   position: absolute;
   left: -40px;
   right: -40px;
-  top: 78px;
+  /* place the line cleanly below the hero title */
+  top: 132px;
   height: 3px;
   border-radius: 999px;
   background:
