@@ -6,44 +6,57 @@ import {
 } from 'recharts';
 
 // A representative static list of NYC OpenData datasets
+// Use the Socrata-style JSON APIs with row limits rather than
+// downloading full CSV exports, which can be huge and slow.
 const NYC_DATASETS = [
   {
     name: "311 Service Requests",
-    url: "https://data.cityofnewyork.us/api/views/erm2-nwe9/rows.csv?accessType=DOWNLOAD"
+    // 311 has a lot of rows; fetch a small sample
+    // so it loads quickly without timing out.
+    url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=500"
   },
   {
     name: "NYC Subway Entrances",
-    url: "https://data.cityofnewyork.us/api/views/he7q-3hwy/rows.csv?accessType=DOWNLOAD"
+    // Original NYC Open Data view is now 404; use the
+    // State of New York Open Data API instead.
+    url: "https://data.ny.gov/resource/i9wp-a4ja.json?$limit=500"
   },
   {
     name: "Film Permits",
-    url: "https://data.cityofnewyork.us/api/views/tg4x-b46p/rows.csv?accessType=DOWNLOAD"
+    url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=500"
   },
   {
     name: "NYC Jobs",
-    url: "https://data.cityofnewyork.us/api/views/kpav-sd4t/rows.csv?accessType=DOWNLOAD"
+    url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=500"
   },
   {
     name: "NYC Motor Vehicle Collisions",
-    url: "https://data.cityofnewyork.us/api/views/h9gi-nx95/rows.csv?accessType=DOWNLOAD"
+    // This dataset is extremely large; keep the limit
+    // quite low so the UI stays responsive.
+    url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=500"
   },
   {
     name: "Street Tree Census",
-    url: "https://data.cityofnewyork.us/api/views/uvpi-gqnh/rows.csv?accessType=DOWNLOAD"
+    url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=500"
   },
   {
     name: "Covid-19 Data",
-    url: "https://data.cityofnewyork.us/api/views/rc75-m7u3/rows.csv?accessType=DOWNLOAD"
+    url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=500"
   },
   {
     name: "Restaurant Inspection Results",
-    url: "https://data.cityofnewyork.us/api/views/43nn-pn8j/rows.csv?accessType=DOWNLOAD"
+    url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=500"
   },
 ];
 
 // Utility functions from before:
 function getExtension(url) {
-  return url.slice(((url.lastIndexOf(".") - 1) >>> 0) + 2).toLowerCase();
+  // Strip off query string and hash so URLs like
+  // "...rows.csv?accessType=DOWNLOAD" are treated as CSV.
+  const cleanUrl = url.split(/[?#]/)[0];
+  const lastDot = cleanUrl.lastIndexOf(".");
+  if (lastDot === -1) return "";
+  return cleanUrl.slice(lastDot + 1).toLowerCase();
 }
 
 function guessNumericFields(data) {
@@ -104,10 +117,24 @@ export default function NYCOpenDataViz() {
     setXField("");
     setYField("");
 
+    let controller;
+    let timeoutId;
+
     try {
-      // Assume CSV files only for simplicity.
-      const response = await fetch(datasetUrl);
-      if (!response.ok) throw new Error("Network response was not ok");
+      // Add an explicit timeout so we never appear to
+      // "hang forever" if an endpoint is slow or down.
+      if (typeof AbortController !== "undefined") {
+        controller = new AbortController();
+        // Allow a bit more time but still fail fast enough
+        // that the UI never feels "stuck forever".
+        timeoutId = setTimeout(() => controller.abort(), 30000);
+      }
+
+      const fetchOptions = controller ? { signal: controller.signal } : {};
+      const response = await fetch(datasetUrl, fetchOptions);
+      if (!response.ok) {
+        throw new Error(`Network response was not ok (status ${response.status})`);
+      }
       const filetype = getExtension(datasetUrl);
       let data = [];
       if (filetype === "csv") {
@@ -132,8 +159,15 @@ export default function NYCOpenDataViz() {
       setCategoryFields(cats);
       setXField(cats[0] || "");
     } catch(e) {
-      setError(e.message || String(e));
+      if (e.name === "AbortError") {
+        setError("Request timed out. This dataset may be too large or temporarily unavailable. Try again or choose another dataset.");
+      } else {
+        setError(e.message || String(e));
+      }
     } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       setLoading(false);
     }
   };
@@ -255,7 +289,14 @@ export default function NYCOpenDataViz() {
                 <tr key={i}>
                   {fields.map(f=>
                     <td key={f} style={{borderBottom:"1px solid #eee", padding:"2px 4px"}}>
-                      {row[f]}
+                      {
+                        // Some APIs return nested objects (e.g. { type, coordinates })
+                        // which React can't render directly as children. For preview
+                        // purposes, stringify any non-primitive values.
+                        row[f] !== null && typeof row[f] === "object"
+                          ? JSON.stringify(row[f])
+                          : row[f]
+                      }
                     </td>
                   )}
                 </tr>
