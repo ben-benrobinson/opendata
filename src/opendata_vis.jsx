@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as Papa from "papaparse";
 // You can use a library like recharts for simple visualizations:
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer
 } from 'recharts';
 
 // A representative static list of NYC OpenData datasets
@@ -82,6 +82,53 @@ function guessCategories(data) {
   });
 }
 
+const AGGREGATIONS = [
+  { value: "none", label: "None (raw)", needsY: true, yMustBeNumeric: true },
+  { value: "count", label: "Count", needsY: false, yMustBeNumeric: false },
+  { value: "countUnique", label: "Count unique", needsY: true, yMustBeNumeric: false },
+  { value: "sum", label: "Sum", needsY: true, yMustBeNumeric: true },
+  { value: "mean", label: "Mean", needsY: true, yMustBeNumeric: true },
+];
+
+function aggregateData(data, xField, yField, aggregation) {
+  if (aggregation === "none" || !data.length) return null;
+  const groups = new Map();
+  for (const row of data) {
+    const xVal = row[xField];
+    if (xVal === undefined || xVal === null || xVal === "") continue;
+    const key = String(xVal).trim();
+    if (!groups.has(key)) {
+      if (aggregation === "count") groups.set(key, 0);
+      else if (aggregation === "countUnique") groups.set(key, new Set());
+      else groups.set(key, []);
+    }
+    const g = groups.get(key);
+    if (aggregation === "count") groups.set(key, g + 1);
+    else if (aggregation === "countUnique") {
+      const yVal = row[yField];
+      if (yVal !== undefined && yVal !== null && yVal !== "") g.add(String(yVal));
+      groups.set(key, g);
+    } else {
+      const yVal = row[yField];
+      const num = Number(yVal);
+      if (yVal !== undefined && yVal !== null && yVal !== "" && !isNaN(num)) g.push(num);
+      groups.set(key, g);
+    }
+  }
+  return Array.from(groups.entries())
+    .map(([name, val]) => {
+      let value;
+      if (aggregation === "count") value = val;
+      else if (aggregation === "countUnique") value = val.size;
+      else if (aggregation === "sum") value = val.reduce((a, b) => a + b, 0);
+      else if (aggregation === "mean") value = val.length ? val.reduce((a, b) => a + b, 0) / val.length : 0;
+      else value = 0;
+      return { name: name.length > 30 ? name.slice(0, 27) + "…" : name, value, fullName: name };
+    })
+    .filter(d => d.value !== undefined && (aggregation === "count" || d.value > 0))
+    .sort((a, b) => b.value - a.value);
+}
+
 export default function NYCOpenDataViz() {
   const [datasetUrl, setDatasetUrl] = useState("");
   const [selectedDataset, setSelectedDataset] = useState(""); // Track dataset selection
@@ -94,6 +141,7 @@ export default function NYCOpenDataViz() {
   const [yField, setYField] = useState("");
   const [error, setError] = useState("");
   const [chartType, setChartType] = useState("Bar");
+  const [aggregation, setAggregation] = useState("count");
 
   // When the dropdown changes, update the dataset URL too
   const handleSelectChange = (e) => {
@@ -173,26 +221,121 @@ export default function NYCOpenDataViz() {
   };
 
   const renderChart = () => {
-    if (!yField || !xField) return <div>Please select X and Y axes.</div>;
+    if (!xField) return <div>Please select a field for the X-axis (group by).</div>;
 
-    // Clean up the data we actually chart so we avoid
-    // weird looking bars from undefined / empty values
+    const aggConfig = AGGREGATIONS.find(a => a.value === aggregation);
+    const useAggregated = aggregation !== "none";
+    if (useAggregated) {
+      if (aggConfig?.needsY && !yField) return <div>Please select a Y field for this aggregation.</div>;
+      const aggregated = aggregateData(rawData, xField, yField || xField, aggregation);
+      if (!aggregated?.length) {
+        return (
+          <div>
+            No aggregated data for this combination. Try a different X field or aggregation.
+          </div>
+        );
+      }
+      const valueKey = "value";
+      const labelKey = "name";
+
+      if (chartType === "Pie") {
+        const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c", "#8dd1e1", "#a4de6c", "#d0ed57", "#83a6ed"];
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <PieChart margin={{ top: 16, right: 24, left: 24, bottom: 16 }}>
+              <Pie
+                data={aggregated}
+                dataKey={valueKey}
+                nameKey={labelKey}
+                cx="50%"
+                cy="50%"
+                outerRadius={140}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                labelLine
+              >
+                {aggregated.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(val, name, props) => [val, props.payload?.fullName ?? name]} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      }
+      if (chartType === "Bar") {
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={aggregated}
+              margin={{ top: 16, right: 24, left: 8, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey={labelKey}
+                tick={{ fontSize: 11, fill: "#e5e7eb" }}
+                angle={-35}
+                textAnchor="end"
+                height={70}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#e5e7eb" }}
+                width={70}
+                label={{ value: aggConfig?.label || "Value", angle: -90, position: "insideLeft", style: { fill: "#e5e7eb" } }}
+              />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey={valueKey} name={aggConfig?.label || "Value"} fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      }
+      if (chartType === "Line") {
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart
+              data={aggregated}
+              margin={{ top: 16, right: 24, left: 8, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey={labelKey}
+                tick={{ fontSize: 11, fill: "#e5e7eb" }}
+                angle={-35}
+                textAnchor="end"
+                height={70}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#e5e7eb" }}
+                width={70}
+                label={{ value: aggConfig?.label || "Value", angle: -90, position: "insideLeft", style: { fill: "#e5e7eb" } }}
+              />
+              <Tooltip />
+              <Legend />
+              <Line dataKey={valueKey} name={aggConfig?.label || "Value"} stroke="#82ca9d" />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+      }
+      return null;
+    }
+
+    // Raw mode: require numeric Y
+    if (!yField) return <div>Please select X and Y axes for raw data.</div>;
     const chartData = rawData
-      .slice(0, 100)
+      .slice(0, 500)
       .filter(row => {
         const xVal = row[xField];
         const yVal = row[yField];
         if (xVal === undefined || xVal === null || xVal === "") return false;
         if (yVal === undefined || yVal === null || yVal === "") return false;
-        // y must be numeric for meaningful charts
         return !isNaN(Number(yVal));
       });
 
     if (!chartData.length) {
       return (
         <div>
-          No clean data points to plot for this X/Y combination.
-          Try choosing a different numeric field for Y or a different category for X.
+          No clean numeric data for this X/Y combination. Try aggregation (e.g. Count) for categorical data, or pick a numeric Y field.
         </div>
       );
     }
@@ -212,10 +355,7 @@ export default function NYCOpenDataViz() {
               textAnchor="end"
               height={70}
             />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#e5e7eb" }}
-              width={70}
-            />
+            <YAxis tick={{ fontSize: 11, fill: "#e5e7eb" }} width={70} />
             <Tooltip />
             <Legend />
             <Bar dataKey={yField} fill="#8884d8" />
@@ -223,7 +363,7 @@ export default function NYCOpenDataViz() {
         </ResponsiveContainer>
       );
     }
-    else if (chartType === "Line") {
+    if (chartType === "Line") {
       return (
         <ResponsiveContainer width="100%" height={400}>
           <LineChart
@@ -238,10 +378,7 @@ export default function NYCOpenDataViz() {
               textAnchor="end"
               height={70}
             />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#e5e7eb" }}
-              width={70}
-            />
+            <YAxis tick={{ fontSize: 11, fill: "#e5e7eb" }} width={70} />
             <Tooltip />
             <Legend />
             <Line dataKey={yField} stroke="#82ca9d" />
@@ -249,7 +386,13 @@ export default function NYCOpenDataViz() {
         </ResponsiveContainer>
       );
     }
-    // You could add Pie, Scatter, etc.
+    if (chartType === "Pie") {
+      return (
+        <div>
+          For raw data, use an aggregation (e.g. Count or Count unique) to see a pie chart.
+        </div>
+      );
+    }
     return null;
   };
 
@@ -289,16 +432,32 @@ export default function NYCOpenDataViz() {
       {error && <div style={{color:'red', marginBottom:12}}>{error}</div>}
       {fields.length > 0 &&
         <div style={{margin:"16px 0", padding:12, border:"1px solid #ccc"}}>
-          <div style={{display:"flex", gap:16, alignItems:'center', marginBottom:8}}>
+          <div style={{display:"flex", flexWrap:"wrap", gap:16, alignItems:"center", marginBottom:8}}>
             <label>
-              Chart Type:&nbsp;
+              Chart type:&nbsp;
               <select value={chartType} onChange={e=>setChartType(e.target.value)}>
-                <option>Bar</option>
-                <option>Line</option>
+                <option value="Bar">Bar</option>
+                <option value="Line">Line</option>
+                <option value="Pie">Pie</option>
               </select>
             </label>
             <label>
-              X-Axis:&nbsp;
+              Aggregation:&nbsp;
+              <select
+                value={aggregation}
+                onChange={e=>{
+                  setAggregation(e.target.value);
+                  if (e.target.value === "none" && !numericFields.includes(yField)) setYField(numericFields[0] || "");
+                  if (e.target.value === "count") setYField("");
+                }}
+              >
+                {AGGREGATIONS.map(a => (
+                  <option key={a.value} value={a.value}>{a.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Group by (X):&nbsp;
               <select value={xField} onChange={e=>setXField(e.target.value)}>
                 {
                   categoryFields.concat(fields.filter(f => !categoryFields.includes(f))).map(f =>
@@ -307,16 +466,27 @@ export default function NYCOpenDataViz() {
                 }
               </select>
             </label>
-            <label>
-              Y-Axis:&nbsp;
-              <select value={yField} onChange={e=>setYField(e.target.value)}>
-                {
-                  numericFields.concat(fields.filter(f => !numericFields.includes(f))).map(f =>
-                    <option key={f} value={f}>{f}</option>
-                  )
-                }
-              </select>
-            </label>
+            { (aggregation === "none" || aggregation === "countUnique" || aggregation === "sum" || aggregation === "mean") &&
+              <label>
+                Y (value):&nbsp;
+                <select value={yField} onChange={e=>setYField(e.target.value)}>
+                  { aggregation === "none" &&
+                    numericFields.concat(fields.filter(f => !numericFields.includes(f))).map(f =>
+                      <option key={f} value={f}>{f}</option>
+                    ) }
+                  { (aggregation === "countUnique" || aggregation === "sum" || aggregation === "mean") &&
+                    (aggregation === "sum" || aggregation === "mean"
+                      ? numericFields.concat(fields.filter(f => !numericFields.includes(f)))
+                      : fields
+                    ).map(f => <option key={f} value={f}>{f}</option>)
+                  }
+                  { aggregation !== "count" && <option value="">—</option> }
+                </select>
+              </label>
+            }
+            { aggregation === "count" &&
+              <span style={{color:"#888", fontSize:14}}>Y optional (counting rows per group)</span>
+            }
           </div>
           {renderChart()}
         </div>
