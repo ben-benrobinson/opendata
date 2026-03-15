@@ -8,46 +8,27 @@ import {
 // A representative static list of NYC OpenData datasets
 // Use the Socrata-style JSON APIs with row limits rather than
 // downloading full CSV exports, which can be huge and slow.
+// Slug is used for cached dataset URLs (e.g. when VITE_CACHE_BASE_URL is set).
 const NYC_DATASETS = [
-  {
-    name: "311 Service Requests",
-    // 311 has a lot of rows; fetch a small sample
-    // so it loads quickly without timing out.
-    url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=5000"
-  },
-  {
-    name: "NYC Subway Entrances",
-    // Original NYC Open Data view is now 404; use the
-    // State of New York Open Data API instead.
-    url: "https://data.ny.gov/resource/i9wp-a4ja.json?$limit=5000"
-  },
-  {
-    name: "Film Permits",
-    url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=5000"
-  },
-  {
-    name: "NYC Jobs",
-    url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=5000"
-  },
-  {
-    name: "NYC Motor Vehicle Collisions",
-    // This dataset is extremely large; keep the limit
-    // quite low so the UI stays responsive.
-    url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=5000"
-  },
-  {
-    name: "Street Tree Census",
-    url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=5000"
-  },
-  {
-    name: "Covid-19 Data",
-    url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=5000"
-  },
-  {
-    name: "Restaurant Inspection Results",
-    url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=5000"
-  },
+  { name: "311 Service Requests", slug: "311-service-requests", url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=5000" },
+  { name: "NYC Subway Entrances", slug: "nyc-subway-entrances", url: "https://data.ny.gov/resource/i9wp-a4ja.json?$limit=5000" },
+  { name: "Film Permits", slug: "film-permits", url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=5000" },
+  { name: "NYC Jobs", slug: "nyc-jobs", url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=5000" },
+  { name: "NYC Motor Vehicle Collisions", slug: "nyc-motor-vehicle-collisions", url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=5000" },
+  { name: "Street Tree Census", slug: "street-tree-census", url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=5000" },
+  { name: "Covid-19 Data", slug: "covid-19-data", url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=5000" },
+  { name: "Restaurant Inspection Results", slug: "restaurant-inspection-results", url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=5000" },
 ];
+
+const CACHE_BASE_URL = import.meta.env.VITE_CACHE_BASE_URL || "";
+
+function getDatasetUrl(dataset) {
+  if (CACHE_BASE_URL && dataset.slug) {
+    const base = CACHE_BASE_URL.replace(/\/$/, "");
+    return `${base}/${dataset.slug}.json`;
+  }
+  return dataset.url;
+}
 
 // Utility functions from before:
 function getExtension(url) {
@@ -145,9 +126,9 @@ export default function NYCOpenDataViz() {
 
   // When the dropdown changes, update the dataset URL too
   const handleSelectChange = (e) => {
-    const url = NYC_DATASETS.find(d => d.name === e.target.value)?.url || "";
+    const dataset = NYC_DATASETS.find(d => d.name === e.target.value);
     setSelectedDataset(e.target.value);
-    setDatasetUrl(url);
+    setDatasetUrl(dataset ? getDatasetUrl(dataset) : "");
   };
 
   const handleUrlChange = (e) => {
