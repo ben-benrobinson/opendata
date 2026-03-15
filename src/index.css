@@ -145,32 +145,6 @@ button:focus-visible {
   pointer-events: none;
 }
 
-.nyc-shell::after {
-  /* subway line running through the header */
-  content: "";
-  position: absolute;
-  left: -40px;
-  right: -40px;
-  /* place the line cleanly below the hero title */
-  top: 132px;
-  height: 3px;
-  border-radius: 999px;
-  background:
-    linear-gradient(
-      to right,
-      #0ea5e9 0%,
-      #22c55e 20%,
-      #f97316 40%,
-      #818cf8 60%,
-      #e11d48 80%,
-      #0ea5e9 100%
-    );
-  box-shadow:
-    0 0 0 1px rgba(15, 23, 42, 0.9),
-    0 0 25px rgba(56, 189, 248, 0.55);
-  opacity: 0.9;
-  pointer-events: none;
-}
 
 .nyc-header {
   position: relative;
@@ -195,11 +169,39 @@ button:focus-visible {
 }
 
 .nyc-title {
+  position: relative;
   font-size: clamp(1.9rem, 3.2vw, 2.4rem);
   font-weight: 650;
   letter-spacing: 0.02em;
   color: #f9fafb;
   margin: 0 0 8px;
+  padding-bottom: 14px; /* space for the underline */
+}
+
+.nyc-title::after {
+  /* gradient line anchored below the title text */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      to right,
+      #0ea5e9 0%,
+      #22c55e 20%,
+      #f97316 40%,
+      #818cf8 60%,
+      #e11d48 80%,
+      #0ea5e9 100%
+    );
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.9),
+    0 0 25px rgba(56, 189, 248, 0.55);
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .nyc-subtitle {
