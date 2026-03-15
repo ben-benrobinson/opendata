@@ -126,6 +126,8 @@ Then turn off “Block all public access” for the bucket (S3 will warn; confir
 
 ### 2.3 Create the Lambda function
 
+Use **Node.js 20.x** (or later); AWS has deprecated runtimes earlier than Node 20.
+
 1. **Zip the Lambda code**
    ```bash
    cd lambda/cache-datasets
@@ -136,7 +138,7 @@ Then turn off “Block all public access” for the bucket (S3 will warn; confir
    ```bash
    aws lambda create-function \
      --function-name opendata-cache-datasets \
-     --runtime nodejs18.x \
+     --runtime nodejs20.x \
      --handler index.handler \
      --zip-file fileb://function.zip \
      --role arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_LAMBDA_EXECUTION_ROLE \
@@ -150,7 +152,7 @@ Then turn off “Block all public access” for the bucket (S3 will warn; confir
 
    **Quick role via Console:**
    - **Lambda** → **Create function** → **Author from scratch**.
-   - Name: `opendata-cache-datasets`, Runtime: **Node.js 18**.
+   - Name: `opendata-cache-datasets`, Runtime: **Node.js 20.x**.
    - Under **Permissions** create a new role with basic Lambda execution (CloudWatch Logs).
    - After creation, go to **Configuration** → **Permissions** → role name. In IAM, attach an inline policy:
      - Effect: Allow  
