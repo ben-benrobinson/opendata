@@ -131,11 +131,6 @@ export default function NYCOpenDataViz() {
     setDatasetUrl(dataset ? getDatasetUrl(dataset) : "");
   };
 
-  const handleUrlChange = (e) => {
-    setDatasetUrl(e.target.value);
-    setSelectedDataset("");
-  };
-
   const fetchDataset = async () => {
     setLoading(true);
     setError("");
@@ -381,32 +376,22 @@ export default function NYCOpenDataViz() {
     <div style={{maxWidth:800, margin:"40px auto", fontFamily:"sans-serif"}}>
       <h2>NYC Open Data Visualizer</h2>
       <p>
-        Choose a dataset below or paste in any CSV or JSON file URL from <a href="https://opendata.cityofnewyork.us" target="_blank" rel="noopener noreferrer">opendata.cityofnewyork.us</a>.<br />
-        (Right-click "Export" &gt; "CSV (utf-8)" or "JSON" to get the direct link.)
+        Choose a dataset below to load and visualize.
       </p>
-      <div style={{display:"flex", gap:8, marginBottom:10, alignItems:'center'}}>
-        <label htmlFor="dataset-dropdown"><b>NYC Data Sources:</b></label>
+      <div style={{display:"flex", gap:8, marginBottom:16, alignItems:'center'}}>
+        <label htmlFor="dataset-dropdown"><b>Dataset:</b></label>
         <select
           id="dataset-dropdown"
           value={selectedDataset}
           onChange={handleSelectChange}
           style={{padding:6, minWidth:230}}
         >
-          <option value="">-- Select a NYC Dataset --</option>
+          <option value="">-- Select a dataset --</option>
           {NYC_DATASETS.map(d =>
             <option key={d.name} value={d.name}>{d.name}</option>
           )}
         </select>
-      </div>
-      <div style={{display:"flex", gap:8, marginBottom:16}}>
-        <input
-          type="text"
-          value={datasetUrl}
-          onChange={handleUrlChange}
-          placeholder="Enter CSV or JSON URL"
-          style={{flex:1, padding:8}}
-        />
-        <button onClick={fetchDataset} disabled={loading || !datasetUrl}>
+        <button onClick={fetchDataset} disabled={loading || !selectedDataset}>
           {loading ? "Loading..." : "Load Data"}
         </button>
       </div>
