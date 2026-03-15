@@ -3,10 +3,10 @@
  * Run daily via EventBridge to keep the cache fresh.
  * Set env: CACHE_BUCKET (required).
  *
- * Uses AWS SDK v2 (included in Lambda Node runtime). Package as zip with this file only.
+ * Uses AWS SDK v3 (bundled in Lambda Node 20+). Package as zip with this file only.
  */
 
-const AWS = require('aws-sdk');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const https = require('https');
 
 const DATASETS = [
@@ -47,7 +47,7 @@ exports.handler = async (event, context) => {
     throw new Error('CACHE_BUCKET environment variable is required');
   }
 
-  const s3 = new AWS.S3();
+  const s3 = new S3Client({});
   const results = { ok: [], failed: [] };
 
   for (const { slug, url } of DATASETS) {
@@ -56,12 +56,12 @@ exports.handler = async (event, context) => {
       if (!Array.isArray(data)) throw new Error('Response is not a JSON array');
 
       const key = `${PREFIX}/${slug}.json`;
-      await s3.putObject({
+      await s3.send(new PutObjectCommand({
         Bucket: BUCKET,
         Key: key,
         Body: JSON.stringify(data),
         ContentType: 'application/json',
-      }).promise();
+      }));
 
       results.ok.push(slug);
     } catch (err) {
