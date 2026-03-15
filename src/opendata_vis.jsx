@@ -10,14 +10,14 @@ import {
 // downloading full CSV exports, which can be huge and slow.
 // Slug is used for cached dataset URLs (e.g. when VITE_CACHE_BASE_URL is set).
 const NYC_DATASETS = [
-  { name: "311 Service Requests", slug: "311-service-requests", url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=5000" },
-  { name: "NYC Subway Entrances", slug: "nyc-subway-entrances", url: "https://data.ny.gov/resource/i9wp-a4ja.json?$limit=5000" },
-  { name: "Film Permits", slug: "film-permits", url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=5000" },
-  { name: "NYC Jobs", slug: "nyc-jobs", url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=5000" },
-  { name: "NYC Motor Vehicle Collisions", slug: "nyc-motor-vehicle-collisions", url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=5000" },
-  { name: "Street Tree Census", slug: "street-tree-census", url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=5000" },
-  { name: "Covid-19 Data", slug: "covid-19-data", url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=5000" },
-  { name: "Restaurant Inspection Results", slug: "restaurant-inspection-results", url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=5000" },
+  { name: "311 Service Requests", slug: "311-service-requests", url: "https://data.cityofnewyork.us/resource/erm2-nwe9.json" },
+  { name: "NYC Subway Entrances", slug: "nyc-subway-entrances", url: "https://data.ny.gov/resource/i9wp-a4ja.json" },
+  { name: "Film Permits", slug: "film-permits", url: "https://data.cityofnewyork.us/resource/tg4x-b46p.json" },
+  { name: "NYC Jobs", slug: "nyc-jobs", url: "https://data.cityofnewyork.us/resource/kpav-sd4t.json" },
+  { name: "NYC Motor Vehicle Collisions", slug: "nyc-motor-vehicle-collisions", url: "https://data.cityofnewyork.us/resource/h9gi-nx95.json" },
+  { name: "Street Tree Census", slug: "street-tree-census", url: "https://data.cityofnewyork.us/resource/uvpi-gqnh.json" },
+  { name: "Covid-19 Data", slug: "covid-19-data", url: "https://data.cityofnewyork.us/resource/rc75-m7u3.json" },
+  { name: "Restaurant Inspection Results", slug: "restaurant-inspection-results", url: "https://data.cityofnewyork.us/resource/43nn-pn8j.json" },
 ];
 
 const CACHE_BASE_URL = import.meta.env.VITE_CACHE_BASE_URL || "";

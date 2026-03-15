@@ -10,14 +10,14 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const https = require('https');
 
 const DATASETS = [
-  { slug: '311-service-requests', url: 'https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=5000' },
-  { slug: 'nyc-subway-entrances', url: 'https://data.ny.gov/resource/i9wp-a4ja.json?$limit=5000' },
-  { slug: 'film-permits', url: 'https://data.cityofnewyork.us/resource/tg4x-b46p.json?$limit=5000' },
-  { slug: 'nyc-jobs', url: 'https://data.cityofnewyork.us/resource/kpav-sd4t.json?$limit=5000' },
-  { slug: 'nyc-motor-vehicle-collisions', url: 'https://data.cityofnewyork.us/resource/h9gi-nx95.json?$limit=5000' },
-  { slug: 'street-tree-census', url: 'https://data.cityofnewyork.us/resource/uvpi-gqnh.json?$limit=5000' },
-  { slug: 'covid-19-data', url: 'https://data.cityofnewyork.us/resource/rc75-m7u3.json?$limit=5000' },
-  { slug: 'restaurant-inspection-results', url: 'https://data.cityofnewyork.us/resource/43nn-pn8j.json?$limit=5000' },
+  { slug: '311-service-requests', url: 'https://data.cityofnewyork.us/resource/erm2-nwe9.json' },
+  { slug: 'nyc-subway-entrances', url: 'https://data.ny.gov/resource/i9wp-a4ja.json' },
+  { slug: 'film-permits', url: 'https://data.cityofnewyork.us/resource/tg4x-b46p.json' },
+  { slug: 'nyc-jobs', url: 'https://data.cityofnewyork.us/resource/kpav-sd4t.json' },
+  { slug: 'nyc-motor-vehicle-collisions', url: 'https://data.cityofnewyork.us/resource/h9gi-nx95.json' },
+  { slug: 'street-tree-census', url: 'https://data.cityofnewyork.us/resource/uvpi-gqnh.json' },
+  { slug: 'covid-19-data', url: 'https://data.cityofnewyork.us/resource/rc75-m7u3.json' },
+  { slug: 'restaurant-inspection-results', url: 'https://data.cityofnewyork.us/resource/43nn-pn8j.json' },
 ];
 
 function fetchJson(url) {
