@@ -197,13 +197,58 @@ export default function NYCOpenDataViz() {
   };
 
   const renderChart = () => {
+    const computeAnomalyFlags = (data, valueKey) => {
+      if (!data || !data.length || !valueKey) return data || [];
+      const numericValues = data
+        .map(d => Number(d[valueKey]))
+        .filter(v => !isNaN(v));
+      if (numericValues.length < 5) return data;
+      const mean =
+        numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length;
+      const variance =
+        numericValues.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) /
+        numericValues.length;
+      const stdDev = Math.sqrt(variance);
+      if (!stdDev || !isFinite(stdDev)) return data;
+      const threshold = 2.5;
+      return data.map(point => {
+        const rawVal = Number(point[valueKey]);
+        if (isNaN(rawVal)) return { ...point, isAnomaly: false };
+        const z = (rawVal - mean) / stdDev;
+        return { ...point, isAnomaly: Math.abs(z) >= threshold };
+      });
+    };
+
+    const renderAnomalyDot = (props) => {
+      const { cx, cy, payload } = props;
+      if (cx == null || cy == null) return null;
+      const baseRadius = 3;
+      const anomalyRadius = 7;
+      return (
+        <g>
+          <circle cx={cx} cy={cy} r={baseRadius} fill="#82ca9d" stroke="none" />
+          {payload?.isAnomaly && (
+            <circle
+              cx={cx}
+              cy={cy}
+              r={anomalyRadius}
+              fill="none"
+              stroke="#ff4b5c"
+              strokeWidth={2}
+            />
+          )}
+        </g>
+      );
+    };
+
     if (!xField) return <div>Please select a field for the X-axis (group by).</div>;
 
     const aggConfig = AGGREGATIONS.find(a => a.value === aggregation);
     const useAggregated = aggregation !== "none";
     if (useAggregated) {
       if (aggConfig?.needsY && !yField) return <div>Please select a Y field for this aggregation.</div>;
-      const aggregated = aggregateData(rawData, xField, yField || xField, aggregation);
+      const aggregatedRaw = aggregateData(rawData, xField, yField || xField, aggregation);
+      const aggregated = computeAnomalyFlags(aggregatedRaw, "value");
       if (!aggregated?.length) {
         return (
           <div>
@@ -288,7 +333,13 @@ export default function NYCOpenDataViz() {
               />
               <Tooltip />
               <Legend />
-              <Line dataKey={valueKey} name={aggConfig?.label || "Value"} stroke="#82ca9d" />
+              <Line
+                dataKey={valueKey}
+                name={aggConfig?.label || "Value"}
+                stroke="#82ca9d"
+                dot={renderAnomalyDot}
+                activeDot={{ r: 6 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -298,7 +349,7 @@ export default function NYCOpenDataViz() {
 
     // Raw mode: require numeric Y
     if (!yField) return <div>Please select X and Y axes for raw data.</div>;
-    const chartData = rawData
+    const chartDataRaw = rawData
       .slice(0, 500)
       .filter(row => {
         const xVal = row[xField];
@@ -307,6 +358,8 @@ export default function NYCOpenDataViz() {
         if (yVal === undefined || yVal === null || yVal === "") return false;
         return !isNaN(Number(yVal));
       });
+
+    const chartData = computeAnomalyFlags(chartDataRaw, yField);
 
     if (!chartData.length) {
       return (
@@ -357,7 +410,12 @@ export default function NYCOpenDataViz() {
             <YAxis tick={{ fontSize: 11, fill: "#e5e7eb" }} width={70} />
             <Tooltip />
             <Legend />
-            <Line dataKey={yField} stroke="#82ca9d" />
+            <Line
+              dataKey={yField}
+              stroke="#82ca9d"
+              dot={renderAnomalyDot}
+              activeDot={{ r: 6 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       );
