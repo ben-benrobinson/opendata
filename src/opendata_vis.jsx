@@ -174,6 +174,33 @@ export default function NYCOpenDataViz() {
         throw new Error("Only CSV or JSON files are supported");
       }
       if (!Array.isArray(data) || !data.length) throw new Error("No data found in file");
+
+      // Dataset-specific cleanup for 311 Service Requests:
+      // - The API field named "created_date" is actually a timestamp.
+      // - Normalize to:
+      //   - "created_time": original timestamp value
+      //   - "created_date": date-only string (YYYY-MM-DD) for daily aggregation.
+      if (selectedDataset === "311 Service Requests") {
+        data = data.map(row => {
+          const original = row.created_date;
+          if (!original) return row;
+          let dateOnly = "";
+          const asDate = new Date(original);
+          if (!isNaN(asDate.getTime())) {
+            const yyyy = asDate.getFullYear();
+            const mm = String(asDate.getMonth() + 1).padStart(2, "0");
+            const dd = String(asDate.getDate()).padStart(2, "0");
+            dateOnly = `${yyyy}-${mm}-${dd}`;
+          } else {
+            dateOnly = String(original).split("T")[0] || String(original);
+          }
+          return {
+            ...row,
+            created_time: original,
+            created_date: dateOnly,
+          };
+        });
+      }
       setRawData(data);
       setFields(Object.keys(data[0]));
       const nums = guessNumericFields(data);
